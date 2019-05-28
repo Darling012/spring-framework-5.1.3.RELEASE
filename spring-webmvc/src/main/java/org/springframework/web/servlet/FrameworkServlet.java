@@ -526,6 +526,7 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 		long startTime = System.currentTimeMillis();
 
 		try {
+			  //开始初始化前端控制器自己的Bean容器
 			this.webApplicationContext = initWebApplicationContext();
 			initFrameworkServlet();
 		}
@@ -557,10 +558,12 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 	 * @see #setContextConfigLocation
 	 */
 	protected WebApplicationContext initWebApplicationContext() {
+		//先尝试从ServletContext中获得全局的Spring容器，（应该是xml contenxt标签配置内容）
+        //全局的Spring容器是通过监听器获得的
 		WebApplicationContext rootContext =
 				WebApplicationContextUtils.getWebApplicationContext(getServletContext());
 		WebApplicationContext wac = null;
-
+        //分为两种情况，一种是Bean容器已存在(什么情况下会这样呢?)
 		if (this.webApplicationContext != null) {
 			// A context instance was injected at construction time -> use it
 			wac = this.webApplicationContext;
@@ -574,10 +577,13 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 						// the root application context (if any; may be null) as the parent
 						cwac.setParent(rootContext);
 					}
+					//最后调用这个配置和刷新Bean容器
+                //如果是下面一个创建的分支的话，最后也是会执行这个函数的
 					configureAndRefreshWebApplicationContext(cwac);
 				}
 			}
 		}
+		//如果没有初始化，第一次进来的时候一定是没有初始化的
 		if (wac == null) {
 			// No context instance was injected at construction time -> see if one
 			// has been registered in the servlet context. If one exists, it is assumed
@@ -585,6 +591,8 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 			// user has performed any initialization such as setting the context id
 			wac = findWebApplicationContext();
 		}
+
+		//找不到实例化一个
 		if (wac == null) {
 			// No context instance is defined for this servlet -> create a local one
 			wac = createWebApplicationContext(rootContext);
@@ -659,11 +667,13 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 				(ConfigurableWebApplicationContext) BeanUtils.instantiateClass(contextClass);
 
 		wac.setEnvironment(getEnvironment());
+		 //将从监听器获得的Spring容器作为父容器
 		wac.setParent(parent);
 		String configLocation = getContextConfigLocation();
 		if (configLocation != null) {
 			wac.setConfigLocation(configLocation);
 		}
+		 //调用这个配置和刷新Web应用上下文的函数
 		configureAndRefreshWebApplicationContext(wac);
 
 		return wac;
@@ -698,6 +708,7 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 
 		postProcessWebApplicationContext(wac);
 		applyInitializers(wac);
+		 //上面都是把一些ServletContext和ServletConfig之类的设置进入Web应用上下，下面是refresh()
 		wac.refresh();
 	}
 
