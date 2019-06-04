@@ -129,6 +129,7 @@ public final class SpringFactoriesLoader {
 		}
 
 		try {
+			 //从类路径的META-INF/spring.factories中加载所有默认的自动配置类
 			Enumeration<URL> urls = (classLoader != null ?
 					classLoader.getResources(FACTORIES_RESOURCE_LOCATION) :
 					ClassLoader.getSystemResources(FACTORIES_RESOURCE_LOCATION));
@@ -138,6 +139,7 @@ public final class SpringFactoriesLoader {
 				UrlResource resource = new UrlResource(url);
 				Properties properties = PropertiesLoaderUtils.loadProperties(resource);
 				for (Map.Entry<?, ?> entry : properties.entrySet()) {
+					//   //获取EnableAutoConfiguration指定的所有值
 					String factoryClassName = ((String) entry.getKey()).trim();
 					for (String factoryName : StringUtils.commaDelimitedListToStringArray((String) entry.getValue())) {
 						result.add(factoryClassName, factoryName.trim());
