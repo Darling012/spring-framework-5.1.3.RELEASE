@@ -301,6 +301,7 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 */
 	@Override
 	public int loadBeanDefinitions(Resource resource) throws BeanDefinitionStoreException {
+		// EncodedResource 对资源文件进行编码处理  getReader中如果设置了编码属性则作为输入流的编码
 		return loadBeanDefinitions(new EncodedResource(resource));
 	}
 
