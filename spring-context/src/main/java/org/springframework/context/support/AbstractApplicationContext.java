@@ -531,23 +531,26 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		synchronized (this.startupShutdownMonitor) {
 			// Prepare this context for refreshing.
 			// 准备工作，记录下容器的启动时间、标记“已启动”状态、处理配置文件中的占位符
+			// 对系统属性及环境变量初始化及验证
 			prepareRefresh();
 
 			// Tell the subclass to refresh the internal bean factory.
-			// 这步比较关键，这步完成后，配置文件就会解析成一个个 Bean 定义，注册到 BeanFactory 中，
-			// 当然，这里说的 Bean 还没有初始化，只是配置信息都提取出来了，
+			// 这步比较关键将会初始化 BeanFactory、加载 Bean、注册 Bean 等等，这步完成后，配置文件就会解析成一个个 Bean 定义，注册到 BeanFactory 中，
+			// 当然，这里说的 Bean 还没有初始化， Bean 实例并未在这一步生成,只是配置信息都提取出来了，
 			// 注册也只是将这些信息都保存到了注册中心(说到底核心是一个 beanName-> beanDefinition 的 map)
+
+			// 经过obtainFreshBeanFactory后ApplicationContext就已经有了BeanFactory的全部功能
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
 			// Prepare the bean factory for use in this context.
 			// 设置 BeanFactory 的类加载器，添加几个 BeanPostProcessor，手动注册几个特殊的 bean
+			// spring已经完成对xml的解析，配置的 bean 都注册
 			prepareBeanFactory(beanFactory);
 
 			try {
 				// Allows post-processing of the bean factory in context subclasses.
 				// 【这里需要知道 BeanFactoryPostProcessor 这个知识点，Bean 如果实现了此接口，
 				// 那么在容器初始化以后，Spring 会负责调用里面的 postProcessBeanFactory 方法。】
-
 				// 这里是提供给子类的扩展点，到这里的时候，所有的 Bean 都加载、注册完成了，但是都还没有初始化
 				// 具体的子类可以在这步的时候添加一些特殊的 BeanFactoryPostProcessor 的实现类或做点什么事
 				postProcessBeanFactory(beanFactory);
@@ -632,11 +635,13 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		}
 
 		// Initialize any placeholder property sources in the context environment
+		// 留给子类覆盖  可以进行个性化的属性处理和设置
 		initPropertySources();
 
 		// Validate that all properties marked as required are resolvable
 		// see ConfigurablePropertyResolver#setRequiredProperties
 		// 校验 xml 配置文件
+		// 验证需要的文件是否都已经放入环境中
 		getEnvironment().validateRequiredProperties();
 
 		// Allow for the collection of early ApplicationEvents,
@@ -679,18 +684,20 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		// 设置 BeanFactory 的类加载器，我们知道 BeanFactory 需要加载类，也就需要类加载器，
         // 这里设置为加载当前 ApplicationContext 类的类加载器
 		beanFactory.setBeanClassLoader(getClassLoader());
-		// 设置 BeanExpressionResolver
+		// 设置 BeanExpressionResolver 表达式语言处理器 spring 3 增加了支持
+		// #{bean.xxx}
 		beanFactory.setBeanExpressionResolver(new StandardBeanExpressionResolver(beanFactory.getBeanClassLoader()));
+		// 一个默认的PropertyEditor 对bean属性等设置管理的工具 (ｘｍｌ和实体类型不符)
 		beanFactory.addPropertyEditorRegistrar(new ResourceEditorRegistrar(this, getEnvironment()));
 
 		// Configure the bean factory with context callbacks.
 		// 添加一个 BeanPostProcessor，这个 processor 比较简单：
-		// 实现了 Aware 接口的 beans 在初始化的时候，这个 processor 负责回调，
+		// 实现了 Aware 接口的 beans 在初始化的时候，可以获得一些资源，这个 processor 负责回调，
 		// 这个我们很常用，如我们会为了获取 ApplicationContext 而 implement ApplicationContextAware
 		// 注意：它不仅仅回调 ApplicationContextAware，
-		//   还会负责回调 EnvironmentAware、ResourceLoaderAware 等，看下源码就清楚了
+		//   还会负责回调 EnvironmentAware、ResourceLoaderAware 等
 		beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));
-		// 下面几行的意思就是，如果某个 bean 依赖于以下几个接口的实现类，在自动装配的时候忽略它们，
+		// 如果某个 bean 依赖于以下几个接口的实现类，在自动装配的时候忽略它们，
         // Spring 会通过其他方式来处理这些依赖。
 		beanFactory.ignoreDependencyInterface(EnvironmentAware.class);
 		beanFactory.ignoreDependencyInterface(EmbeddedValueResolverAware.class);
@@ -702,7 +709,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		// BeanFactory interface not registered as resolvable type in a plain factory.
 		// MessageSource registered (and found for autowiring) as a bean.
 		/**
-		 * 下面几行就是为特殊的几个 bean 赋值，如果有 bean 依赖了以下几个，会注入这边相应的值，
+		 * 为特殊的几个 bean 赋值，如果有 bean 依赖了以下几个，会注入这边相应的值，
 		 * 之前我们说过，"当前 ApplicationContext 持有一个 BeanFactory"，这里解释了第一行
 		 * ApplicationContext 还继承了 ResourceLoader、ApplicationEventPublisher、MessageSource
 		 * 所以对于这几个依赖，可以赋值为 this，注意 this 是一个 ApplicationContext

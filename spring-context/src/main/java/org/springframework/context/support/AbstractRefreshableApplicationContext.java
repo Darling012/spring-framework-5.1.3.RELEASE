@@ -119,13 +119,15 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	 * This implementation performs an actual refresh of this context's underlying
 	 * bean factory, shutting down the previous bean factory (if any) and
 	 * initializing a fresh bean factory for the next phase of the context's lifecycle.
+	 *
+	 * ApplicationContext不应该被理解为 BeanFactory 的实现类，而是说其内部持有一个实例化的 BeanFactory（DefaultListableBeanFactory）。以后所有的 BeanFactory 相关的操作其实是委托给这个实例来处理的
 	 */
 	@Override
 	protected final void refreshBeanFactory() throws BeansException {
 		// 如果 ApplicationContext 中已经加载过 BeanFactory 了，销毁所有 Bean，关闭 BeanFactory
 		// 注意，应用中 BeanFactory 本来就是可以多个的，这里可不是说应用全局是否有 BeanFactory，而是当前
-
 		// ApplicationContext 是否有 BeanFactory
+
 		if (hasBeanFactory()) {
 			destroyBeans();
 			closeBeanFactory();
@@ -138,6 +140,7 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 			 // 设置 BeanFactory 的两个配置属性：是否允许 Bean 覆盖、是否允许循环引用
 			customizeBeanFactory(beanFactory);
 			// 加载 Bean 到 BeanFactory 中
+			// 初始化DodumentReader,并进行xml文件的读取及解析
 			loadBeanDefinitions(beanFactory);
 			synchronized (this.beanFactoryMonitor) {
 				this.beanFactory = beanFactory;
@@ -230,6 +233,7 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	 * @see DefaultListableBeanFactory#setAllowEagerClassLoading
 	 */
 	protected void customizeBeanFactory(DefaultListableBeanFactory beanFactory) {
+		// 不为空处理用子类实现
 		if (this.allowBeanDefinitionOverriding != null) {
 			 // 是否允许 Bean 定义覆盖
 			beanFactory.setAllowBeanDefinitionOverriding(this.allowBeanDefinitionOverriding);
