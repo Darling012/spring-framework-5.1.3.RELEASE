@@ -112,6 +112,7 @@ import org.springframework.util.StringUtils;
  * @see #getBean
  * @see #resolveDependency
  * @since 16 April 2001
+ * Spring 注册及加载bean的默认实现
  */
 @SuppressWarnings("serial")
 public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFactory

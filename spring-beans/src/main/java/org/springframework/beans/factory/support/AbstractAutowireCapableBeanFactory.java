@@ -167,6 +167,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 	/**
 	 * Create a new AbstractAutowireCapableBeanFactory.
+	 * 忽略给定接口的自动装配功能
 	 */
 	public AbstractAutowireCapableBeanFactory() {
 		super();

@@ -37,6 +37,7 @@ import java.io.InputStream;
  * @see Resource
  * @see InputStreamResource
  * @see ByteArrayResource
+ * 封装热呢能返回InputStream的类，
  */
 public interface InputStreamSource {
 
