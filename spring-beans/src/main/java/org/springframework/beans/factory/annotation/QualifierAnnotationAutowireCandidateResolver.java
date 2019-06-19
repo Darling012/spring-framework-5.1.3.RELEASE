@@ -56,6 +56,8 @@ import org.springframework.util.StringUtils;
  * @see AutowireCandidateQualifier
  * @see Qualifier
  * @see Value
+ * 处理 @Qualifier 和 @Value 注解
+ *
  */
 public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwareAutowireCandidateResolver {
 
@@ -146,12 +148,15 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 	public boolean isAutowireCandidate(BeanDefinitionHolder bdHolder, DependencyDescriptor descriptor) {
 		boolean match = super.isAutowireCandidate(bdHolder, descriptor);
 		if (match) {
+			// 检验是否满足 qualifierTypes 集合中定义的规范
+        // descriptor 一般封装的是属性写方法的参数，即方法参数上的注解
 			match = checkQualifiers(bdHolder, descriptor.getAnnotations());
 			if (match) {
 				MethodParameter methodParam = descriptor.getMethodParameter();
 				if (methodParam != null) {
 					Method method = methodParam.getMethod();
 					if (method == null || void.class == method.getReturnType()) {
+						 // 方法上的注解
 						match = checkQualifiers(bdHolder, methodParam.getMethodAnnotations());
 					}
 				}
@@ -162,6 +167,7 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 
 	/**
 	 * Match the given qualifier annotations against the candidate bean definition.
+	 * 核心方法
 	 */
 	protected boolean checkQualifiers(BeanDefinitionHolder bdHolder, Annotation[] annotationsToSearch) {
 		if (ObjectUtils.isEmpty(annotationsToSearch)) {
@@ -172,6 +178,7 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 			Class<? extends Annotation> type = annotation.annotationType();
 			boolean checkMeta = true;
 			boolean fallbackToMeta = false;
+			 // 1. 第一步：存在 @Qualifier
 			if (isQualifier(type)) {
 				if (!checkQualifier(bdHolder, annotation, typeConverter)) {
 					fallbackToMeta = true;
@@ -180,6 +187,7 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 					checkMeta = false;
 				}
 			}
+			// 2. 第二步：两种情况下执行，一是存在 @Qualifier 校验失败；二是不存在 @Qualifier
 			if (checkMeta) {
 				boolean foundMeta = false;
 				for (Annotation metaAnn : type.getAnnotations()) {
@@ -188,12 +196,15 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 						foundMeta = true;
 						// Only accept fallback match if @Qualifier annotation has a value...
 						// Otherwise it is just a marker for a custom qualifier annotation.
+						// 1. 第一步校验失败下元注解上的 @Qualifier 没有配置 value 直接返回 false
+                    // 2. 不管第一步执行没有，如果检验失败直接返回 false
 						if ((fallbackToMeta && StringUtils.isEmpty(AnnotationUtils.getValue(metaAnn))) ||
 								!checkQualifier(bdHolder, metaAnn, typeConverter)) {
 							return false;
 						}
 					}
 				}
+				 // 第一步说明存在 @Qualifier 则必须校验成功，否则直接返回
 				if (fallbackToMeta && !foundMeta) {
 					return false;
 				}
@@ -216,13 +227,21 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 
 	/**
 	 * Match the given qualifier annotation against the candidate bean definition.
+	 * 将 bd.qualifiers 的信息和当前 @Qualifier 注解的信息进行对比，看是否一致
+	 *
+	 * 1 获取 BeanDefinition 中定义的 qualifier 属性，如果没有配置，则尝试从其 factory-method 或 beanClass 上获取 @Qualifier 注解(可能为自定义)，如果获取到就直接返回。
+	 *
+	 * 2 我们使用的大多数场景是没有配置 BeanDefinition#qualifier 属性的，也就是说 qualifier=null，下面进一步比较 bd.qualifier 中的属性和 @Qualifier 中的属性信息 attributes。如果注解没有属性字段，则必须配置 BeanDefinition#qualifier
+	 *
+	 * 3 将 bd.qualifier 和 attributes 中的属性字段逐一对比，默认是和 bd.beanName 进行对比，如果值不相等则抛出异常，也就是说可以在自定义注解中定义多个字段进行校验
+	 *
 	 */
 	protected boolean checkQualifier(
 			BeanDefinitionHolder bdHolder, Annotation annotation, TypeConverter typeConverter) {
 
 		Class<? extends Annotation> type = annotation.annotationType();
 		RootBeanDefinition bd = (RootBeanDefinition) bdHolder.getBeanDefinition();
-
+// 1. 获取 BeanDefinition 中的 qualifier
 		AutowireCandidateQualifier qualifier = bd.getQualifier(type.getName());
 		if (qualifier == null) {
 			qualifier = bd.getQualifier(ClassUtils.getShortName(type));
@@ -261,10 +280,13 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 				return true;
 			}
 		}
-
+// 2. bd.qualifier 中的属性和 @Qualifier 中配置的进行对比
+    //    attributes 为 @Qualifier 注解信息，value 有一个默认值 ""
+    //    qualifier 为 bd 中的配置，默认为 null
 		Map<String, Object> attributes = AnnotationUtils.getAnnotationAttributes(annotation);
 		if (attributes.isEmpty() && qualifier == null) {
 			// If no attributes, the qualifier must be present
+			// 当注解中属性值为空时，如自定义的 @Qualifier，此时 bd.qualifier 必须存在
 			return false;
 		}
 		for (Map.Entry<String, Object> entry : attributes.entrySet()) {
@@ -279,6 +301,7 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 				// Fall back on bean definition attribute
 				actualValue = bd.getAttribute(attributeName);
 			}
+			// 如果 actualValue=null(如没有 qualifier)，默认是和 bdHolder 中 bean 的名称进行比较
 			if (actualValue == null && attributeName.equals(AutowireCandidateQualifier.VALUE_KEY) &&
 					expectedValue instanceof String && bdHolder.matchesName((String) expectedValue)) {
 				// Fall back on bean name (or alias) match
@@ -347,6 +370,7 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 	@Override
 	@Nullable
 	public Object getSuggestedValue(DependencyDescriptor descriptor) {
+		// findValue 用于提取 valueAnnotationType 注解的值
 		Object value = findValue(descriptor.getAnnotations());
 		if (value == null) {
 			MethodParameter methodParam = descriptor.getMethodParameter();

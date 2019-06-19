@@ -41,6 +41,7 @@ import org.springframework.util.ClassUtils;
  *
  * @author Juergen Hoeller
  * @since 4.0
+ * 进一步判断泛型是否匹配
  */
 public class GenericTypeAwareAutowireCandidateResolver extends SimpleAutowireCandidateResolver
 		implements BeanFactoryAware {

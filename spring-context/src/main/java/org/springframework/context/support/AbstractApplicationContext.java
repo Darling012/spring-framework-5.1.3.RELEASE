@@ -583,7 +583,6 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				registerListeners();
 
 				// Instantiate all remaining (non-lazy-init) singletons.
-				// 重点，重点，重点
          // 初始化所有的 singleton beans
          //（lazy-init 的除外）
 				finishBeanFactoryInitialization(beanFactory);
@@ -918,7 +917,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 */
 	protected void finishBeanFactoryInitialization(ConfigurableListableBeanFactory beanFactory) {
 		// Initialize conversion service for this context.
-		// 首先，初始化名字为 conversionService 的 Bean。本着送佛送到西的精神，我在附录中简单介绍了一下 ConversionService，因为这实在太实用了
+		// 首先，初始化名字为 conversionService 的 Bean。
 		//ConversionService用来将前端传过来的参数和后端的 controller 方法上的参数进行绑定的时候用
 		// 注意了，初始化的动作包装在 beanFactory.getBean(...) 中，这里先不说细节，先往下看吧
 		if (beanFactory.containsBean(CONVERSION_SERVICE_BEAN_NAME) &&

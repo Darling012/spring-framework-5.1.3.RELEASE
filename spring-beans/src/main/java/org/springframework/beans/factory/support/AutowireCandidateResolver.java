@@ -27,6 +27,8 @@ import org.springframework.lang.Nullable;
  * @author Juergen Hoeller
  * @author Mark Fisher
  * @since 2.5
+ *
+ * 判断一个给定的 bean 是否可以注入
  */
 public interface AutowireCandidateResolver {
 
@@ -39,6 +41,9 @@ public interface AutowireCandidateResolver {
 	 * @param descriptor the descriptor for the target method parameter or field
 	 * @return whether the bean definition qualifies as autowire candidate
 	 * @see org.springframework.beans.factory.config.BeanDefinition#isAutowireCandidate()
+	 *
+	 *   判断给定的 bdHolder 是否可以注入 descriptor，BeanDefinition#autowireCandidate 默认为 true
+	 *   DependencyDescriptor 是对字段、方法、参数的封装，便于统一处理，这里一般是对属性写方法参数的封装
 	 */
 	default boolean isAutowireCandidate(BeanDefinitionHolder bdHolder, DependencyDescriptor descriptor) {
 		return bdHolder.getBeanDefinition().isAutowireCandidate();
@@ -52,6 +57,8 @@ public interface AutowireCandidateResolver {
 	 * non-required status some other way (e.g. through a parameter annotation)
 	 * @since 5.0
 	 * @see DependencyDescriptor#isRequired()
+	 *
+	 *   @since 5.0 判断是否必须注入，如果是字段类型是 Optional 或有 @Null 注解时为 false
 	 */
 	default boolean isRequired(DependencyDescriptor descriptor) {
 		return descriptor.isRequired();
@@ -66,6 +73,7 @@ public interface AutowireCandidateResolver {
 	 * status beyond the type match
 	 * @since 5.1
 	 * @see org.springframework.beans.factory.annotation.QualifierAnnotationAutowireCandidateResolver#hasQualifier
+	 *  @since 5.1 判断是否有 @Qualifier(Spring 或 JDK) 或自定义的注解
 	 */
 	default boolean hasQualifier(DependencyDescriptor descriptor) {
 		return false;
@@ -78,6 +86,7 @@ public interface AutowireCandidateResolver {
 	 * @return the value suggested (typically an expression String),
 	 * or {@code null} if none found
 	 * @since 3.0
+	 *  @Value 时直接返回
 	 */
 	@Nullable
 	default Object getSuggestedValue(DependencyDescriptor descriptor) {
