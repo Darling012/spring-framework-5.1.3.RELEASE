@@ -26,6 +26,8 @@ import org.springframework.lang.Nullable;
  *
  * @author Juergen Hoeller
  * @since 2.0.7
+ * <p>
+ * InfrastructureAdvisorAutoProxyCreator 是 AbstractAutoProxyCreator 的子类，AbstractAutoProxyCreator 又实现了 BeanPostProcessor 接口，那么在 bean 初始化完毕后就会调用 postProcessAfterInstantiation() 方法，postProcessAfterInstantiation() 定义在 AbstractAutoProxyCreator 类中
  */
 @SuppressWarnings("serial")
 public class InfrastructureAdvisorAutoProxyCreator extends AbstractAdvisorAutoProxyCreator {

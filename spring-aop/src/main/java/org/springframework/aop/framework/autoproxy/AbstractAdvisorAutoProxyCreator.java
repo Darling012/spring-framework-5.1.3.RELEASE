@@ -72,8 +72,9 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	@Nullable
 	protected Object[] getAdvicesAndAdvisorsForBean(
 			Class<?> beanClass, String beanName, @Nullable TargetSource targetSource) {
-
+         // 查找符合条件的切面
 		List<Advisor> advisors = findEligibleAdvisors(beanClass, beanName);
+		// 不存在符合条件的切面，则返回null 不生成代理
 		if (advisors.isEmpty()) {
 			return DO_NOT_PROXY;
 		}
@@ -89,9 +90,15 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	 * @see #findCandidateAdvisors
 	 * @see #sortAdvisors
 	 * @see #extendAdvisors
+	 * 为什么上面获取到的切面是 BeanFactoryTransactionAttributeSourceAdvisor？
+	 * 是否还记得之前导入配置类的时候还有一个配置类没有分析？那就是 ProxyTransactionManagementConfiguration
 	 */
 	protected List<Advisor> findEligibleAdvisors(Class<?> beanClass, String beanName) {
+		// 获取所有候选的切面，也就是类型为Advisor的切面，
+		// 此处获取到的候选切面为BeanFactoryTransactionAttributeSourceAdvisor
 		List<Advisor> candidateAdvisors = findCandidateAdvisors();
+		 // 从候选的切面中获取可以解析当前bean的切面，
+		// 最终符合条件的切面为BeanFactoryTransactionAttributeSourceAdvisor
 		List<Advisor> eligibleAdvisors = findAdvisorsThatCanApply(candidateAdvisors, beanClass, beanName);
 		extendAdvisors(eligibleAdvisors);
 		if (!eligibleAdvisors.isEmpty()) {
@@ -117,12 +124,14 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	 * @param beanName the target's bean name
 	 * @return the List of applicable Advisors
 	 * @see ProxyCreationContext#getCurrentProxiedBeanName()
+	 * 如何从候选切面中找到可以解析当前 bean 的切面？
 	 */
 	protected List<Advisor> findAdvisorsThatCanApply(
 			List<Advisor> candidateAdvisors, Class<?> beanClass, String beanName) {
 
 		ProxyCreationContext.setCurrentProxiedBeanName(beanName);
 		try {
+			// 查找可以解析当前bean对应的切面
 			return AopUtils.findAdvisorsThatCanApply(candidateAdvisors, beanClass);
 		}
 		finally {
