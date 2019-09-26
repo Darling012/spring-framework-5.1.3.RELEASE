@@ -309,7 +309,6 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 			commitTransactionAfterReturning(txInfo);
 			return retVal;
 		}
-
 		else {
 			final ThrowableHolder throwableHolder = new ThrowableHolder();
 
