@@ -16,29 +16,8 @@
 
 package org.springframework.web.servlet;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.stream.Collectors;
-import javax.servlet.DispatcherType;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.springframework.beans.factory.BeanFactoryUtils;
 import org.springframework.beans.factory.BeanInitializationException;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
@@ -63,6 +42,15 @@ import org.springframework.web.multipart.MultipartHttpServletRequest;
 import org.springframework.web.multipart.MultipartResolver;
 import org.springframework.web.util.NestedServletException;
 import org.springframework.web.util.WebUtils;
+
+import javax.servlet.DispatcherType;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Central dispatcher for HTTP request handlers/controllers, e.g. for web UI controllers
@@ -1007,6 +995,7 @@ public class DispatcherServlet extends FrameworkServlet {
 	 */
 	protected void doDispatch(HttpServletRequest request, HttpServletResponse response) throws Exception {
 		HttpServletRequest processedRequest = request;
+		// HandlerExecutionChain是一个由拦截器组成的一个chain链，是一个责任链模式，内部保存了拦截器的集合，这个集合和filter过滤器一样，是在请求到来后，根据url进行正则匹配，从所有的拦截器中选出符合规则的，然后加入到集合中。
 		HandlerExecutionChain mappedHandler = null;
 		boolean multipartRequestParsed = false;
 
@@ -1041,13 +1030,14 @@ public class DispatcherServlet extends FrameworkServlet {
 						return;
 					}
 				}
-
+                //执行interceptor的preHandle
+				// 当一个请求到达之后，springmvc会根据请求的url找出相匹配的拦截器，组装成一个责任链，按照拦截器顺序依次执行其preHandle方法，执行完毕之后，继续执行具体的Controller，当Controller执行完成后，会逆序执行拦截器的postHandle方法，之后渲染页面，最后逆序 执行afterCompletion方法。如果在执行preHandle的过程中，有任意一个interceptor返回了false，那么请求将不再继续向下执行，在逆序执行完之前返回true的拦截器的afterCompletion方法后，结束对请求的处理。如果在preHandle和postHandle方法中抛出了异常，那么spring会将异常捕捉，记录异常信息，不再继续执行拦截器的处理，而是执行渲染页面并执行那些成功执行过preHandle方法的拦截器的afterCompletion方法
 				if (!mappedHandler.applyPreHandle(processedRequest, response)) {
 					return;
 				}
 
 				// Actually invoke the handler.
-				// 调用处理器逻辑
+				// 调用处理器逻辑 //执行实际的Controller
 				mv = ha.handle(processedRequest, response, mappedHandler.getHandler());
 
 				if (asyncManager.isConcurrentHandlingStarted()) {
@@ -1055,7 +1045,7 @@ public class DispatcherServlet extends FrameworkServlet {
 				}
                // 如果 controller 未返回 view 名称，这里生成默认的 view 名称
 				applyDefaultViewName(processedRequest, mv);
-				// 执行拦截器preHandle方法
+				// 执行拦截器postHandle方法
 				mappedHandler.applyPostHandle(processedRequest, response, mv);
 			}
 			catch (Exception ex) {
@@ -1117,6 +1107,7 @@ public class DispatcherServlet extends FrameworkServlet {
 		if (exception != null) {
 			if (exception instanceof ModelAndViewDefiningException) {
 				logger.debug("ModelAndViewDefiningException encountered", exception);
+				//处理错误页面
 				mv = ((ModelAndViewDefiningException) exception).getModelAndView();
 			}
 			else {
@@ -1144,7 +1135,7 @@ public class DispatcherServlet extends FrameworkServlet {
 			// Concurrent handling started during a forward
 			return;
 		}
-
+       //执行拦截器的afterCompletion方法
 		if (mappedHandler != null) {
 			mappedHandler.triggerAfterCompletion(request, response, null);
 		}

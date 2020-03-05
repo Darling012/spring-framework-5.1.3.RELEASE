@@ -16,17 +16,16 @@
 
 package org.springframework.web.servlet;
 
-import java.util.ArrayList;
-import java.util.List;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Handler execution chain, consisting of handler object and any handler interceptors.
@@ -127,6 +126,8 @@ public class HandlerExecutionChain {
 	 * @return {@code true} if the execution chain should proceed with the
 	 * next interceptor or the handler itself. Else, DispatcherServlet assumes
 	 * that this interceptor has already dealt with the response itself.
+	 * 按照拦截器的顺序从前向后执行preHandle方法，如果有一个拦截器返回了false，那么将不再继续执行当前拦截器及其之后拦截器的preHandle，而是按拦截器逆序执行afterCompletion方法 ; 如果拦截器均返回了true，那么继续执行Controller的逻辑，然后按逆序执行拦截器的postHandle方法
+	 * 如果在执行preHandle和postHandle时抛出了异常，那么会把异常记录下来，然后执行processDispatchResult方法；如果一切顺利，那么也会执行processDispatchResult方法
 	 */
 	boolean applyPreHandle(HttpServletRequest request, HttpServletResponse response) throws Exception {
 		HandlerInterceptor[] interceptors = getInterceptors();
@@ -134,6 +135,7 @@ public class HandlerExecutionChain {
 			for (int i = 0; i < interceptors.length; i++) {
 				HandlerInterceptor interceptor = interceptors[i];
 				if (!interceptor.preHandle(request, response, this.handler)) {
+					// triggerAfterCompletion方法会吞掉所有异常，保证拦截器的afterCompletion方法全部得到执行。注意triggerAfterCompletion方法的循环边界，是 interceptorIndex，而不是 interceptors.length，也就是说只执行那些preHandle方法返回true的拦截器。之后return false。不再继续执行真正的Controller。
 					triggerAfterCompletion(request, response, null);
 					return false;
 				}
