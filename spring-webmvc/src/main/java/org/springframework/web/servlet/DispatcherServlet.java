@@ -1011,6 +1011,7 @@ public class DispatcherServlet extends FrameworkServlet {
 
 				// Determine handler for the current request.
 				// 获取可处理当前请求的处理器 Handler，对应流程图中的步骤
+				// 获取了HandlerExecutionChain 包括HandlerMethod 和 interceptors 集合
 				mappedHandler = getHandler(processedRequest);
 				if (mappedHandler == null) {
 					noHandlerFound(processedRequest, response);
@@ -1018,7 +1019,7 @@ public class DispatcherServlet extends FrameworkServlet {
 				}
 
 				// Determine handler adapter for the current request.
-				// 获取可执行处理器逻辑的适配器
+				// 根据handlerMethod 获取可执行处理器逻辑的适配器
 				HandlerAdapter ha = getHandlerAdapter(mappedHandler.getHandler());
 
 				// Process last-modified header, if supported by the handler.
@@ -1030,7 +1031,7 @@ public class DispatcherServlet extends FrameworkServlet {
 						return;
 					}
 				}
-                //执行interceptor的preHandle
+                //执行HandlerExecutionChain的preHandle
 				// 当一个请求到达之后，springmvc会根据请求的url找出相匹配的拦截器，组装成一个责任链，按照拦截器顺序依次执行其preHandle方法，执行完毕之后，继续执行具体的Controller，当Controller执行完成后，会逆序执行拦截器的postHandle方法，之后渲染页面，最后逆序 执行afterCompletion方法。如果在执行preHandle的过程中，有任意一个interceptor返回了false，那么请求将不再继续向下执行，在逆序执行完之前返回true的拦截器的afterCompletion方法后，结束对请求的处理。如果在preHandle和postHandle方法中抛出了异常，那么spring会将异常捕捉，记录异常信息，不再继续执行拦截器的处理，而是执行渲染页面并执行那些成功执行过preHandle方法的拦截器的afterCompletion方法
 				if (!mappedHandler.applyPreHandle(processedRequest, response)) {
 					return;
@@ -1056,13 +1057,15 @@ public class DispatcherServlet extends FrameworkServlet {
 				// making them available for @ExceptionHandler methods and other scenarios.
 				dispatchException = new NestedServletException("Handler dispatch failed", err);
 			}
-			// 解析并渲染视图
-			processDispatchResult(processedRequest, response, mappedHandler, mv, dispatchException);
+			// 解析并渲染视图 执行拦截器的triggerAfterCompletion方法
+ 			processDispatchResult(processedRequest, response, mappedHandler, mv, dispatchException);
 		}
 		catch (Exception ex) {
+			// 发生异常还是调用拦截器triggerAfterCompletion
 			triggerAfterCompletion(processedRequest, response, mappedHandler, ex);
 		}
 		catch (Throwable err) {
+			// 发生异常还是调用拦截器triggerAfterCompletion
 			triggerAfterCompletion(processedRequest, response, mappedHandler,
 					new NestedServletException("Handler processing failed", err));
 		}

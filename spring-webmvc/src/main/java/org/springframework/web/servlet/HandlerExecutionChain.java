@@ -39,11 +39,17 @@ public class HandlerExecutionChain {
 
 	private static final Log logger = LogFactory.getLog(HandlerExecutionChain.class);
 
+	/**
+	 * handleMethod
+	 */
 	private final Object handler;
 
 	@Nullable
 	private HandlerInterceptor[] interceptors;
 
+	/**
+	 * 拦截器集合
+	 */
 	@Nullable
 	private List<HandlerInterceptor> interceptorList;
 

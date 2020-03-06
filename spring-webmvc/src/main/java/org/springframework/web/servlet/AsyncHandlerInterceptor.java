@@ -16,10 +16,10 @@
 
 package org.springframework.web.servlet;
 
+import org.springframework.web.method.HandlerMethod;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.springframework.web.method.HandlerMethod;
 
 /**
  * Extends {@code HandlerInterceptor} with a callback method invoked after the
@@ -52,10 +52,11 @@ import org.springframework.web.method.HandlerMethod;
  * {@code preHandle} regardless of whether async request processing will start.
  *
  * @author Rossen Stoyanchev
- * @since 3.2
  * @see org.springframework.web.context.request.async.WebAsyncManager
  * @see org.springframework.web.context.request.async.CallableProcessingInterceptor
  * @see org.springframework.web.context.request.async.DeferredResultProcessingInterceptor
+ * ，额外提供了afterConcurrentHandlingStarted方法，该方法是用来处理异步请求。当Controller中有异步请求方法的时候会触发该方法。 异步请求先支持preHandle、然后执行afterConcurrentHandlingStarted。异步线程完成之后执行preHandle、postHandle、afterCompletion.
+ * @since 3.2
  */
 public interface AsyncHandlerInterceptor extends HandlerInterceptor {
 
@@ -66,14 +67,15 @@ public interface AsyncHandlerInterceptor extends HandlerInterceptor {
 	 * avoid modifying them in ways that would conflict with the concurrent
 	 * execution of the handler. A typical use of this method would be to
 	 * clean up thread-local variables.
-	 * @param request the current request
+	 *
+	 * @param request  the current request
 	 * @param response the current response
-	 * @param handler the handler (or {@link HandlerMethod}) that started async
-	 * execution, for type and/or instance examination
+	 * @param handler  the handler (or {@link HandlerMethod}) that started async
+	 *                 execution, for type and/or instance examination
 	 * @throws Exception in case of errors
 	 */
 	default void afterConcurrentHandlingStarted(HttpServletRequest request, HttpServletResponse response,
-			Object handler) throws Exception {
+												Object handler) throws Exception {
 	}
 
 }
