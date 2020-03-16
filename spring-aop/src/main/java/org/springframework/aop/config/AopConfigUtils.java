@@ -16,9 +16,6 @@
 
 package org.springframework.aop.config;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.springframework.aop.aspectj.annotation.AnnotationAwareAspectJAutoProxyCreator;
 import org.springframework.aop.aspectj.autoproxy.AspectJAwareAdvisorAutoProxyCreator;
 import org.springframework.aop.framework.autoproxy.InfrastructureAdvisorAutoProxyCreator;
@@ -28,6 +25,9 @@ import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.core.Ordered;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Utility class for handling registration of AOP auto-proxy creators.
@@ -66,7 +66,6 @@ public abstract class AopConfigUtils {
 
 	@Nullable
 	public static BeanDefinition registerAutoProxyCreatorIfNecessary(BeanDefinitionRegistry registry) {
-		// 注册了InfrastructureAdvisorAutoProxyCreator到IOC容器中
 		return registerAutoProxyCreatorIfNecessary(registry, null);
 	}
 
@@ -74,6 +73,7 @@ public abstract class AopConfigUtils {
 	public static BeanDefinition registerAutoProxyCreatorIfNecessary(
 			BeanDefinitionRegistry registry, @Nullable Object source) {
         // 注册了InfrastructureAdvisorAutoProxyCreator到IOC容器中
+		// InfrastructureAdvisorAutoProxyCreator是AbstractAutoProxyCreator的子类，AbstractAutoProxyCreator又实现了BeanPostProcessor接口，那么在bean初始化完毕后就会调用postProcessAfterInstantiation()方法，postProcessAfterInstantiation()定义在AbstractAutoProxyCreator类中
 		return registerOrEscalateApcAsRequired(InfrastructureAdvisorAutoProxyCreator.class, registry, source);
 	}
 
