@@ -16,10 +16,6 @@
 
 package org.springframework.web.reactive.handler;
 
-import java.util.Map;
-
-import reactor.core.publisher.Mono;
-
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.context.support.ApplicationObjectSupport;
 import org.springframework.core.Ordered;
@@ -35,11 +31,14 @@ import org.springframework.web.reactive.HandlerMapping;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebHandler;
 import org.springframework.web.util.pattern.PathPatternParser;
+import reactor.core.publisher.Mono;
+
+import java.util.Map;
 
 /**
  * Abstract base class for {@link org.springframework.web.reactive.HandlerMapping}
  * implementations.
- *
+ * HandlerMapping实现的抽象基类。
  * @author Rossen Stoyanchev
  * @author Juergen Hoeller
  * @author Brian Clozel
@@ -171,10 +170,12 @@ public abstract class AbstractHandlerMapping extends ApplicationObjectSupport
 
 	@Override
 	public Mono<Object> getHandler(ServerWebExchange exchange) {
+		//调用 getHandlerInternal 方法来确定HandlerFunction
 		return getHandlerInternal(exchange).map(handler -> {
 			if (logger.isDebugEnabled()) {
 				logger.debug(exchange.getLogPrefix() + "Mapped to " + handler);
 			}
+			// 跨域相关处理
 			if (CorsUtils.isCorsRequest(exchange.getRequest())) {
 				CorsConfiguration configA = this.corsConfigurationSource.getCorsConfiguration(exchange);
 				CorsConfiguration configB = getCorsConfiguration(handler, exchange);

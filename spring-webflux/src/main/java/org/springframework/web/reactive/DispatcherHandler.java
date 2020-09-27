@@ -16,14 +16,6 @@
 
 package org.springframework.web.reactive;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
 import org.springframework.beans.factory.BeanFactoryUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -34,6 +26,13 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebHandler;
 import org.springframework.web.server.adapter.WebHttpHandlerBuilder;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Central dispatcher for HTTP request handlers/controllers. Dispatches to
@@ -144,11 +143,16 @@ public class DispatcherHandler implements WebHandler, ApplicationContextAware {
 		if (this.handlerMappings == null) {
 			return createNotFoundError();
 		}
+		// 1.HTTP请求进来后执行的流程
+		//2 遍历handlerMappings定位RouterFunctionMapping
 		return Flux.fromIterable(this.handlerMappings)
+				    // 3.获取HandlerFunction
 				.concatMap(mapping -> mapping.getHandler(exchange))
 				.next()
 				.switchIfEmpty(createNotFoundError())
+				   //4.执行
 				.flatMap(handler -> invokeHandler(exchange, handler))
+				    //5. 处理结果
 				.flatMap(result -> handleResult(exchange, result));
 	}
 
@@ -162,7 +166,9 @@ public class DispatcherHandler implements WebHandler, ApplicationContextAware {
 	private Mono<HandlerResult> invokeHandler(ServerWebExchange exchange, Object handler) {
 		if (this.handlerAdapters != null) {
 			for (HandlerAdapter handlerAdapter : this.handlerAdapters) {
+				//判断HandlerAdapters中是否支持之前获取到的handler
 				if (handlerAdapter.supports(handler)) {
+					//执行handler 对应下面handle的方法
 					return handlerAdapter.handle(exchange, handler);
 				}
 			}
@@ -171,7 +177,9 @@ public class DispatcherHandler implements WebHandler, ApplicationContextAware {
 	}
 
 	private Mono<Void> handleResult(ServerWebExchange exchange, HandlerResult result) {
+		 //获取对应的返回结果处理器并处理
 		return getResultHandler(result).handleResult(exchange, result)
+									    //如果出现错误或者异常 则选择对应的异常结果处理器进行处理
 				.onErrorResume(ex -> result.applyExceptionHandler(ex).flatMap(exceptionResult ->
 						getResultHandler(exceptionResult).handleResult(exchange, exceptionResult)));
 	}

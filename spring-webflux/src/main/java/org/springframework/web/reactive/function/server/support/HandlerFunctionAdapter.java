@@ -16,10 +16,6 @@
 
 package org.springframework.web.reactive.function.server.support;
 
-import java.lang.reflect.Method;
-
-import reactor.core.publisher.Mono;
-
 import org.springframework.core.MethodParameter;
 import org.springframework.web.reactive.HandlerAdapter;
 import org.springframework.web.reactive.HandlerResult;
@@ -27,6 +23,9 @@ import org.springframework.web.reactive.function.server.HandlerFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
+
+import java.lang.reflect.Method;
 
 /**
  * {@code HandlerAdapter} implementation that supports {@link HandlerFunction HandlerFunctions}.
@@ -58,7 +57,7 @@ public class HandlerFunctionAdapter implements HandlerAdapter {
 	public Mono<HandlerResult> handle(ServerWebExchange exchange, Object handler) {
 		HandlerFunction<?> handlerFunction = (HandlerFunction<?>) handler;
 		ServerRequest request = exchange.getRequiredAttribute(RouterFunctions.REQUEST_ATTRIBUTE);
-		return handlerFunction.handle(request)
-				.map(response -> new HandlerResult(handlerFunction, response, HANDLER_FUNCTION_RETURN_TYPE));
+		return handlerFunction.handle(request)//由lambda模式 (返回值-参数)  无需准确的方法签名
+				.map(response -> new HandlerResult(handlerFunction, response, HANDLER_FUNCTION_RETURN_TYPE)); //返回HandlerResult对象
 	}
 }

@@ -16,13 +16,6 @@
 
 package org.springframework.web.reactive.function.server.support;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import reactor.core.publisher.Mono;
-
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.http.codec.HttpMessageReader;
 import org.springframework.http.codec.ServerCodecConfigurer;
@@ -35,6 +28,12 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.handler.AbstractHandlerMapping;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.util.pattern.PathPattern;
+import reactor.core.publisher.Mono;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * {@code HandlerMapping} implementation that supports {@link RouterFunction RouterFunctions}.
@@ -92,13 +91,14 @@ public class RouterFunctionMapping extends AbstractHandlerMapping implements Ini
 		this.messageReaders = messageReaders;
 	}
 
+	// 组件初始化后回调 必须实现InitializingBean接口
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		if (CollectionUtils.isEmpty(this.messageReaders)) {
 			ServerCodecConfigurer codecConfigurer = ServerCodecConfigurer.create();
 			this.messageReaders = codecConfigurer.getReaders();
 		}
-
+        //   初始化routerFunction
 		if (this.routerFunction == null) {
 			initRouterFunctions();
 		}
@@ -106,13 +106,15 @@ public class RouterFunctionMapping extends AbstractHandlerMapping implements Ini
 
 	/**
 	 * Initialized the router functions by detecting them in the application context.
+	 * 从应用上下文中查找他们并初始化路由方法
 	 */
 	protected void initRouterFunctions() {
 		List<RouterFunction<?>> routerFunctions = routerFunctions();
+		//将一个请求中含有多个路由请求方法合并成一个方法
 		this.routerFunction = routerFunctions.stream().reduce(RouterFunction::andOther).orElse(null);
 		logRouterFunctions(routerFunctions);
 	}
-
+	//查找合并所有路由方法的bean
 	private List<RouterFunction<?>> routerFunctions() {
 		List<RouterFunction<?>> functions = obtainApplicationContext()
 				.getBeanProvider(RouterFunction.class)
@@ -145,6 +147,7 @@ public class RouterFunctionMapping extends AbstractHandlerMapping implements Ini
 	protected Mono<?> getHandlerInternal(ServerWebExchange exchange) {
 		if (this.routerFunction != null) {
 			ServerRequest request = ServerRequest.create(exchange, this.messageReaders);
+			//通过路由获取到对应处理的HandlerFunction 也就是执行方法
 			return this.routerFunction.route(request)
 					.doOnNext(handler -> setAttributes(exchange.getAttributes(), request, handler));
 		}

@@ -16,12 +16,6 @@
 
 package org.springframework.web.reactive.config;
 
-import java.util.List;
-import java.util.Map;
-import java.util.function.Predicate;
-
-import reactor.core.publisher.Mono;
-
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.BeanInitializationException;
 import org.springframework.context.ApplicationContext;
@@ -68,6 +62,11 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebExceptionHandler;
 import org.springframework.web.server.i18n.AcceptHeaderLocaleContextResolver;
 import org.springframework.web.server.i18n.LocaleContextResolver;
+import reactor.core.publisher.Mono;
+
+import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
 
 /**
  * The main class for Spring WebFlux configuration.
@@ -80,15 +79,16 @@ import org.springframework.web.server.i18n.LocaleContextResolver;
  */
 public class WebFluxConfigurationSupport implements ApplicationContextAware {
 
+	//跨域配置
 	@Nullable
 	private Map<String, CorsConfiguration> corsConfigurations;
-
+	//路径HandlerMapping 对应的路径配置
 	@Nullable
 	private PathMatchConfigurer pathMatchConfigurer;
-
+	//视图解析器
 	@Nullable
 	private ViewResolverRegistry viewResolverRegistry;
-
+	//上下文
 	@Nullable
 	private ApplicationContext applicationContext;
 
@@ -97,9 +97,9 @@ public class WebFluxConfigurationSupport implements ApplicationContextAware {
 	public void setApplicationContext(@Nullable ApplicationContext applicationContext) {
 		this.applicationContext = applicationContext;
 		if (applicationContext != null) {
-				Assert.state(!applicationContext.containsBean("mvcContentNegotiationManager"),
-						"The Java/XML config for Spring MVC and Spring WebFlux cannot both be enabled, " +
-						"e.g. via @EnableWebMvc and @EnableWebFlux, in the same application.");
+			Assert.state(!applicationContext.containsBean("mvcContentNegotiationManager"),
+						 "The Java/XML config for Spring MVC and Spring WebFlux cannot both be enabled, " +
+								 "e.g. via @EnableWebMvc and @EnableWebFlux, in the same application.");
 		}
 	}
 
@@ -108,18 +108,20 @@ public class WebFluxConfigurationSupport implements ApplicationContextAware {
 		return this.applicationContext;
 	}
 
-
+	//声明DispatcherHandler 对象 注入到容器中
 	@Bean
 	public DispatcherHandler webHandler() {
 		return new DispatcherHandler();
 	}
 
+	//异常处理器
 	@Bean
 	@Order(0)
 	public WebExceptionHandler responseStatusExceptionHandler() {
 		return new WebFluxResponseStatusExceptionHandler();
 	}
 
+	//requestMappingHandlerMapping 和SrpingMvc组件一样
 	@Bean
 	public RequestMappingHandlerMapping requestMappingHandlerMapping() {
 		RequestMappingHandlerMapping mapping = createRequestMappingHandlerMapping();
@@ -151,6 +153,7 @@ public class WebFluxConfigurationSupport implements ApplicationContextAware {
 		return new RequestMappingHandlerMapping();
 	}
 
+	//Webflux内容协商处理器
 	@Bean
 	public RequestedContentTypeResolver webFluxContentTypeResolver() {
 		RequestedContentTypeResolverBuilder builder = new RequestedContentTypeResolverBuilder();
@@ -179,6 +182,7 @@ public class WebFluxConfigurationSupport implements ApplicationContextAware {
 
 	/**
 	 * Override this method to configure cross origin requests processing.
+	 *
 	 * @see CorsRegistry
 	 */
 	protected void addCorsMappings(CorsRegistry registry) {
@@ -202,6 +206,7 @@ public class WebFluxConfigurationSupport implements ApplicationContextAware {
 	public void configurePathMatching(PathMatchConfigurer configurer) {
 	}
 
+	//WebFlux 的请求映射处理器 在 RequestMappingHandlerMapping 之前
 	@Bean
 	public RouterFunctionMapping routerFunctionMapping() {
 		RouterFunctionMapping mapping = createRouterFunctionMapping();
@@ -224,6 +229,7 @@ public class WebFluxConfigurationSupport implements ApplicationContextAware {
 	 * resource handlers. To configure resource handling, override
 	 * {@link #addResourceHandlers}.
 	 */
+	//其他映射处理器 这里默认是 SimpleUrlHandlerMapping
 	@Bean
 	public HandlerMapping resourceHandlerMapping() {
 		ResourceLoader resourceLoader = this.applicationContext;
@@ -245,8 +251,7 @@ public class WebFluxConfigurationSupport implements ApplicationContextAware {
 			if (useCaseSensitiveMatch != null) {
 				handlerMapping.setUseCaseSensitiveMatch(useCaseSensitiveMatch);
 			}
-		}
-		else {
+		} else {
 			handlerMapping = new EmptyHandlerMapping();
 		}
 		return handlerMapping;
@@ -259,11 +264,13 @@ public class WebFluxConfigurationSupport implements ApplicationContextAware {
 
 	/**
 	 * Override this method to add resource handlers for serving static resources.
+	 *
 	 * @see ResourceHandlerRegistry
 	 */
 	protected void addResourceHandlers(ResourceHandlerRegistry registry) {
 	}
 
+	//请求适配器 支持 WebFlux
 	@Bean
 	public RequestMappingHandlerAdapter requestMappingHandlerAdapter() {
 		RequestMappingHandlerAdapter adapter = createRequestMappingHandlerAdapter();
@@ -310,6 +317,7 @@ public class WebFluxConfigurationSupport implements ApplicationContextAware {
 		return new AcceptHeaderLocaleContextResolver();
 	}
 
+	//国际化解析器
 	@Bean
 	public LocaleContextResolver localeContextResolver() {
 		return createLocaleContextResolver();
@@ -350,6 +358,7 @@ public class WebFluxConfigurationSupport implements ApplicationContextAware {
 	/**
 	 * Override this method to add custom {@link Converter} and/or {@link Formatter}
 	 * delegates to the common {@link FormattingConversionService}.
+	 *
 	 * @see #webFluxConversionService()
 	 */
 	protected void addFormatters(FormatterRegistry registry) {
@@ -380,13 +389,11 @@ public class WebFluxConfigurationSupport implements ApplicationContextAware {
 				try {
 					String name = "org.springframework.validation.beanvalidation.OptionalValidatorFactoryBean";
 					clazz = ClassUtils.forName(name, getClass().getClassLoader());
-				}
-				catch (ClassNotFoundException | LinkageError ex) {
+				} catch (ClassNotFoundException | LinkageError ex) {
 					throw new BeanInitializationException("Failed to resolve default validator class", ex);
 				}
 				validator = (Validator) BeanUtils.instantiateClass(clazz);
-			}
-			else {
+			} else {
 				validator = new NoOpValidator();
 			}
 		}
@@ -409,6 +416,7 @@ public class WebFluxConfigurationSupport implements ApplicationContextAware {
 		return null;
 	}
 
+	//WebFlux路由形式的适配器
 	@Bean
 	public HandlerFunctionAdapter handlerFunctionAdapter() {
 		return new HandlerFunctionAdapter();
@@ -422,13 +430,13 @@ public class WebFluxConfigurationSupport implements ApplicationContextAware {
 	@Bean
 	public ResponseEntityResultHandler responseEntityResultHandler() {
 		return new ResponseEntityResultHandler(serverCodecConfigurer().getWriters(),
-				webFluxContentTypeResolver(), webFluxAdapterRegistry());
+											   webFluxContentTypeResolver(), webFluxAdapterRegistry());
 	}
 
 	@Bean
 	public ResponseBodyResultHandler responseBodyResultHandler() {
 		return new ResponseBodyResultHandler(serverCodecConfigurer().getWriters(),
-				webFluxContentTypeResolver(), webFluxAdapterRegistry());
+											 webFluxContentTypeResolver(), webFluxAdapterRegistry());
 	}
 
 	@Bean
@@ -465,6 +473,7 @@ public class WebFluxConfigurationSupport implements ApplicationContextAware {
 
 	/**
 	 * Configure view resolution for supporting template engines.
+	 *
 	 * @see ViewResolverRegistry
 	 */
 	protected void configureViewResolvers(ViewResolverRegistry registry) {
